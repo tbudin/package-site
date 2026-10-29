@@ -301,10 +301,14 @@ h1.title { margin: 2px 0 6px; font: 400 34px/42px var(--f-head); letter-spacing:
 
 /* ---------- code ---------- */
 
-.code { position: relative; margin-top: 16px; background: var(--code); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+/* clip, so the shield on the copy button below cannot square off the corner */
+.code { position: relative; margin-top: 16px; background: var(--code); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: clip; }
 .code pre { margin: 0; padding: 14px 16px; padding-right: 72px; overflow-x: auto; font: 13px/21px var(--f-mono); color: var(--fg); white-space: pre; tab-size: 2; }
 .code .c { color: var(--muted); }
-.code .copy { position: absolute; top: 8px; right: 8px; font-size: 12px; padding: 3px 9px; gap: 5px; }
+/* The padding on <pre> only holds the button's width clear at the end of the
+   line. A line longer than the box scrolls, and then it runs under the button
+   and reappears in the gap beside it. The shield closes that gap. */
+.code .copy { position: absolute; top: 8px; right: 8px; font-size: 12px; padding: 3px 9px; gap: 5px; box-shadow: 0 0 0 8px var(--code); }
 .code .copy svg { width: 13px; height: 13px; flex: none; }
 .code .copy .tick { display: none; }
 .code .copy[data-done] .tick { display: block; }
