@@ -1,0 +1,447 @@
+/* package-site chrome.
+   The whole site skin: header, drawer, sidebar, page, playground, controls,
+   code, tables, pager, credit. Every form control in the UI is styled once,
+   here, so a select in the header and a select in a playground are the same
+   object. A package changes the look by setting tokens, never by restyling
+   these rules — out-specifying this file is how two sites drift apart.
+
+   Tokens a package may set (defaults below are a neutral warm grey):
+     colour   --bg --fg --muted --line --line-strong --panel --code --accent
+              --mark --up --down
+     type     --f-ui --f-head --f-mono --size --line-height
+     shape    --radius --radius-lg --focus-width --focus-style
+     stage    --stage-bg --stage-ink --stage-pad
+     nav      --nav-width --nav-current-bg
+*/
+
+:root {
+  color-scheme: light;
+  --bg: #fbfaf7;
+  --fg: #1a1a17;
+  --muted: #6a6a62;
+  --line: #e2e0d8;
+  /* A control's border is the only thing that says where the control is, so it
+     answers to WCAG 1.4.11 and has to clear 3:1 against the surface behind it.
+     --line is for rules and dividers, which carry no meaning and need not. */
+  --line-strong: #8c8979;
+  --panel: #f2f0e9;
+  --code: #f3f1ea;
+  --accent: #9a4a1e;
+  --mark: #f0d9a8;
+  --up: #15803d;
+  --down: #b3261e;
+
+  --f-ui: ui-sans-serif, system-ui, sans-serif;
+  --f-head: Georgia, serif;
+  --f-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --size: 15px;
+  --line-height: 24px;
+
+  --radius: 4px;
+  --radius-lg: 8px;
+  --focus-width: 2px;
+  --focus-style: solid;
+
+  --stage-bg: var(--panel);
+  --stage-ink: var(--fg);
+  --stage-pad: 28px;
+
+  --nav-width: 208px;
+  --nav-current-bg: var(--mark);
+
+  /* internal: the sticky header's height, used by the sidebar */
+  --top-h: 57px;
+}
+
+/* A package supplies its own dark values; these are the fallback. The guard
+   lets an explicit data-theme="light" win over the system preference. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #16161a; --fg: #eceae4; --muted: #9b9b93; --line: #2e2e34;
+    --line-strong: #6e6e78;
+    --panel: #1d1d22; --code: #1c1c21; --accent: #e09b6a; --mark: #4a3c22;
+    --up: #4ac98a; --down: #e2766c;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #16161a; --fg: #eceae4; --muted: #9b9b93; --line: #2e2e34;
+  --line-strong: #6e6e78;
+  --panel: #1d1d22; --code: #1c1c21; --accent: #e09b6a; --mark: #4a3c22;
+  --up: #4ac98a; --down: #e2766c;
+}
+
+* { box-sizing: border-box; }
+/* Any display rule in this file beats the browser's own [hidden] style, so a
+   hidden control reappears the moment it is given a layout. The !important is
+   what makes `hidden` mean hidden, everywhere, without each rule opting in. */
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+html, body { margin: 0; background: var(--bg); color: var(--fg); }
+body { font: var(--size)/var(--line-height) var(--f-ui); -webkit-font-smoothing: antialiased; overflow-wrap: break-word; }
+a { color: var(--accent); text-underline-offset: 2px; }
+img, svg, video { max-width: 100%; }
+::selection { background: color-mix(in srgb, var(--mark) 80%, transparent); }
+/* the strip behind a notched status bar, so the header does not show through */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.skip { position: absolute; left: 8px; top: 8px; z-index: 30; padding: 8px 14px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); color: var(--fg); transform: translateY(-200%); }
+.skip:focus { transform: none; }
+
+/* ---------- form primitives: one definition for the whole site ---------- */
+
+.ui-field,
+input[type="text"], input[type="search"], input[type="number"], input[type="url"], select, textarea {
+  font: 13px/18px var(--f-ui);
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  padding: 5px 7px;
+  min-width: 0;
+  max-width: 100%;
+}
+/* A select draws two things over its background: the arrow, always, and the
+   mark for its current value, when the site gives it one. The mark is a layer
+   in front of the arrow rather than a replacement for it, and the slot it sits
+   in is reserved here so the box never resizes as the value changes. Which
+   mark to draw is pure CSS — see selectMarkCss in src/theme.mjs. */
+select {
+  --mark-img: none; --mark-size: 0px; --mark-gap: 0px;
+  appearance: none;
+  padding-left: calc(7px + var(--mark-size) + var(--mark-gap));
+  padding-right: 24px;
+  background-image: var(--mark-img),
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: left 7px center, right 11px center, right 7px center;
+  background-size: var(--mark-size), 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+}
+textarea { width: 100%; min-height: 168px; resize: vertical; white-space: pre; tab-size: 2; font-family: var(--f-mono); }
+input[type="search"] { appearance: none; }
+input[type="search"]::-webkit-search-decoration { appearance: none; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; flex: none; }
+input[type="color"] { width: 44px; height: 28px; padding: 2px; cursor: pointer; }
+input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 2px; }
+
+.btn, button.ui-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: 13px/18px var(--f-ui);
+  color: var(--fg); background: var(--bg);
+  border: 1px solid var(--line-strong); border-radius: var(--radius);
+  padding: 5px 11px; cursor: pointer; text-decoration: none;
+}
+.btn:hover, button.ui-btn:hover { background: var(--panel); }
+.btn[aria-pressed="true"], .btn.on { background: color-mix(in srgb, var(--mark) 75%, transparent); }
+.btn--quiet { border-color: transparent; background: none; }
+.btn--chip { border-style: dashed; border-radius: 12px; padding: 2px 10px; font-size: 12px; }
+.btn--chip:hover { border-style: solid; }
+.btn:disabled, button.ui-btn:disabled { opacity: .5; cursor: default; }
+
+/* A switch: on or off, nothing submitted. Sized from the type so it sits on
+   the same baseline as the selects beside it. */
+.switch { display: inline-flex; align-items: center; gap: 7px; font: 13px/18px var(--f-ui); color: var(--muted); background: none; border: 0; padding: 3px 4px; min-height: 24px; cursor: pointer; }
+.switch-track { position: relative; width: 30px; height: 17px; border-radius: 9px; background: var(--panel); border: 1px solid var(--line-strong); transition: background .15s ease; }
+.switch-knob { position: absolute; top: 2px; left: 2px; width: 11px; height: 11px; border-radius: 50%; background: var(--muted); transition: transform .15s ease, background .15s ease; }
+.switch[aria-checked="true"] .switch-track { background: color-mix(in srgb, var(--accent) 35%, var(--panel)); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.switch[aria-checked="true"] .switch-knob { transform: translateX(13px); background: var(--accent); }
+.switch[aria-checked="true"] { color: var(--fg); }
+@media (prefers-reduced-motion: reduce) { .switch-track, .switch-knob { transition: none; } }
+
+/* a run of buttons that behave as one choice */
+.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: var(--radius); overflow: hidden; }
+.seg button { font: 13px/18px var(--f-ui); color: var(--muted); background: none; border: 0; padding: 4px 10px; cursor: pointer; }
+.seg button[aria-pressed="true"], .seg button[aria-selected="true"] { color: var(--fg); background: color-mix(in srgb, var(--mark) 75%, transparent); }
+.seg button + button { border-left: 1px solid var(--line-strong); }
+
+:where(input, select, textarea, button, a, summary, [tabindex]):focus-visible {
+  outline: var(--focus-width) var(--focus-style) var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- header ---------- */
+
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  display: flex; align-items: center; gap: 12px 24px; flex-wrap: wrap;
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: baseline; gap: 10px; text-decoration: none; color: var(--fg); }
+.brand b { font: 500 21px/32px var(--f-mono); letter-spacing: -.02em; color: var(--accent); }
+.brand span { font-size: 12px; font-family: var(--f-mono); color: var(--muted); }
+.top-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin-left: auto; font-size: 13px; }
+.top-ctl label { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+.top-link { font-size: 13px; text-decoration: none; padding: 2px 8px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--fg); }
+.top-link:hover { background: var(--panel); }
+.menu-btn { display: none; }
+.here { display: none; }
+
+/* ---------- sidebar and drawer ---------- */
+
+.wrap { display: grid; grid-template-columns: var(--nav-width) minmax(0, 1fr); max-width: 1320px; margin: 0 auto; }
+.side {
+  position: sticky; top: var(--top-h); align-self: start;
+  max-height: calc(100vh - var(--top-h)); overflow-y: auto;
+  padding: 16px 16px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px));
+  border-right: 1px solid var(--line);
+}
+.side-head, .side-settings:empty { display: none; }
+.find { position: relative; display: block; margin-bottom: 14px; }
+.find input { width: 100%; padding-right: 30px; }
+.find kbd { position: absolute; right: 7px; top: 6px; font: 11px var(--f-mono); color: var(--muted); border: 1px solid var(--line-strong); border-radius: 3px; padding: 0 5px; }
+.nav-group-label { margin: 16px 0 2px; font: 500 11px/18px var(--f-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.side a { display: block; padding: 2px 8px; margin: 0 -8px; color: var(--fg); text-decoration: none; font-size: 14px; line-height: 26px; border-radius: 3px; }
+.side a:hover { background: var(--panel); }
+.side a[aria-current] { background: var(--nav-current-bg); }
+.nothing { font-size: 13px; color: var(--muted); }
+.scrim { position: fixed; inset: 0; z-index: 19; background: rgba(20, 18, 14, .4); }
+
+main#page { min-width: 0; padding: 28px 32px 80px; padding-right: max(32px, env(safe-area-inset-right, 0px)); }
+
+@media (max-width: 860px) {
+  .menu-btn { display: inline-flex; }
+  .brand span { display: none; }
+  .here { display: block; min-width: 0; flex: 1; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+  .top { flex-wrap: nowrap; gap: 12px; }
+  .top > .top-ctl { display: none; }
+  .wrap { grid-template-columns: minmax(0, 1fr); }
+  .side {
+    /* align-self: start is still in force from the sticky rule above, and an
+       absolutely positioned box honours it: without this reset the drawer is
+       as tall as its links and the page shows through underneath. */
+    position: fixed; z-index: 20; top: 0; bottom: 0; left: 0; max-height: none; align-self: stretch;
+    width: min(320px, 86vw); padding: 0 18px 32px;
+    padding-left: max(18px, env(safe-area-inset-left, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+    background: var(--bg); border-right: 1px solid var(--line);
+    box-shadow: 8px 0 30px rgba(0, 0, 0, .18);
+    transform: translateX(-105%); transition: transform .25s ease; visibility: hidden;
+  }
+  .side.open { transform: none; visibility: visible; }
+  /* inert is set on what is behind the drawer; this only stops it looking
+     interactive while it is unreachable. */
+  [inert] { opacity: .999; }
+  .side-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; height: 52px; position: sticky; top: 0; background: var(--bg); z-index: 1; }
+  .side-head b { font: 500 17px var(--f-mono); color: var(--accent); }
+  .side-settings:not(:empty) { display: block; padding: 4px 0 14px; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+  .side-settings .top-ctl { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 0; }
+  .side-settings label { justify-content: space-between; }
+  .side-settings select, .side-settings input { min-width: 140px; }
+  .find kbd { display: none; }
+  .side a { line-height: 36px; font-size: 15px; }
+  main#page { padding: 20px 16px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) { .side { transition: none; } }
+
+/* ---------- page ---------- */
+
+.crumb { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 0; padding: 0; list-style: none; font: 500 11px/18px var(--f-mono); color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+.crumb a { color: inherit; text-decoration: none; }
+.crumb a:hover { color: var(--accent); }
+.crumb li + li::before { content: "/"; margin-right: 8px; opacity: .6; }
+h1.title { margin: 2px 0 6px; font: 400 34px/42px var(--f-head); letter-spacing: -.015em; text-wrap: balance; }
+.lead { margin: 0 0 24px; max-width: 64ch; color: color-mix(in srgb, var(--fg) 82%, var(--bg)); text-wrap: pretty; }
+.page h2 { margin: 36px 0 10px; font: 400 22px/30px var(--f-head); }
+.page h3 { margin: 24px 0 8px; font: 500 15px/22px var(--f-ui); }
+.page h4, .page h5, .page h6 { margin: 24px 0 6px; font: 600 14px/1.4 var(--f-ui); color: var(--fg); }
+.page p, .page ul, .page ol { max-width: 68ch; }
+.page ul, .page ol { padding-left: 20px; }
+.page li { margin-bottom: 6px; }
+.page hr { margin: 36px 0; border: 0; border-top: 1px solid var(--line); }
+
+@media (max-width: 600px) { h1.title { font-size: 27px; line-height: 34px; } }
+
+/* ---------- playground ---------- */
+
+.play { display: grid; grid-template-columns: minmax(0, 1fr) 272px; border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: clip; }
+.play.solo { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1100px) { .play { grid-template-columns: minmax(0, 1fr); } }
+.stage { position: relative; min-width: 0; background: var(--stage-bg); color: var(--stage-ink); padding: var(--stage-pad); overflow: hidden; display: flex; align-items: center; justify-content: center; min-height: 190px; }
+.stage > * { max-width: 100%; }
+.stage-tools { position: absolute; top: 8px; right: 10px; display: flex; gap: 8px; z-index: 4; }
+.stage-tools .btn { font-size: 12px; padding: 2px 8px; background: color-mix(in srgb, var(--stage-bg) 70%, var(--bg) 30%); }
+@media (max-width: 600px) { .stage { padding: 14px; } }
+
+.ctls { display: flex; flex-direction: column; gap: 14px; padding: 18px; background: var(--bg); border-left: 1px solid var(--line); min-width: 0; }
+@media (max-width: 1100px) {
+  .ctls { border-left: 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); align-content: start; }
+  .ctls-head, .ctls .wide { grid-column: 1 / -1; }
+}
+.ctls-head { margin: 0; font: 500 11px/18px var(--f-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.ctl { display: flex; flex-direction: column; gap: 4px; font-size: 13px; line-height: 18px; }
+.ctl > label > span, .ctl > span { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); }
+.ctl small { color: var(--muted); font-size: 12px; line-height: 16px; }
+.ctl output { color: var(--fg); font-variant-numeric: tabular-nums; }
+.ctl.check { flex-direction: row; align-items: center; gap: 8px; }
+.ctl.check > span { color: var(--fg); }
+
+/* On a phone the preview and its settings take turns, so nothing has to scroll
+   inside anything. The toggle is a .seg like any other: one segmented control
+   in the stylesheet, not a second one that only looks the same. */
+.play-tabs { display: none; margin-bottom: 10px; }
+.play-tabs button { font-size: 14px; padding: 7px 18px; }
+@media (max-width: 860px) {
+  .play-tabs { display: inline-flex; max-width: 100%; }
+  .play[data-view="preview"] > .ctls, .play[data-view="settings"] > .stage { display: none; }
+  .play[data-view="settings"] > .ctls { border-top: 0; }
+}
+
+/* ---------- code ---------- */
+
+.code { position: relative; margin-top: 16px; background: var(--code); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+.code pre { margin: 0; padding: 14px 16px; padding-right: 72px; overflow-x: auto; font: 13px/21px var(--f-mono); color: var(--fg); white-space: pre; tab-size: 2; }
+.code .c { color: var(--muted); }
+.code .copy { position: absolute; top: 8px; right: 8px; font-size: 12px; padding: 3px 9px; gap: 5px; }
+.code .copy svg { width: 13px; height: 13px; flex: none; }
+.code .copy .tick { display: none; }
+.code .copy[data-done] .tick { display: block; }
+.code .copy[data-done] .sheets { display: none; }
+/* A code box with more than one pane. The switcher sits above the code and
+   keeps clear of the copy button, wrapping under it rather than behind it. */
+.code-head { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 76px 0 8px; }
+.code-tabs pre { padding-top: 10px; }
+
+.code-label { margin: 22px 0 0; font: 500 11px/18px var(--f-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+
+/* ---------- reference table ---------- */
+
+.ref-wrap { overflow-x: auto; }
+table.ref { min-width: 520px; }
+.ref td:first-child { white-space: nowrap; }
+/* ---------- prose ----------
+   Scoped to the page rather than listed context by context. An enumerated
+   selector only covers the places that existed when it was written, so the
+   first <dd><code> a package writes comes out unstyled. */
+
+.page code { font: 12.5px var(--f-mono); background: var(--code); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; }
+.page .code pre code, .page pre code { font-size: inherit; background: none; border: 0; padding: 0; }
+.page kbd { font: 11px var(--f-mono); color: var(--muted); background: var(--bg); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 3px; padding: 1px 5px; }
+.page b, .page strong { font-weight: 600; }
+.page small { font-size: 12px; line-height: 16px; color: var(--muted); }
+.page dl { margin: 12px 0; }
+.page dt { font-weight: 500; }
+.page dd { margin: 0 0 8px; color: color-mix(in srgb, var(--fg) 85%, var(--bg)); }
+.page details { border-bottom: 1px solid var(--line); padding: 10px 0; }
+.page summary { cursor: pointer; font-weight: 500; }
+.page mark { background: color-mix(in srgb, var(--mark) 70%, transparent); color: inherit; padding: 0 2px; }
+.page abbr[title] { text-decoration: underline dotted; text-underline-offset: 3px; cursor: help; }
+.page sup, .page sub { font-size: 11px; line-height: 0; }
+.page del { text-decoration: line-through; text-decoration-color: var(--down); color: var(--muted); }
+.page ins { text-decoration: none; background: color-mix(in srgb, var(--up) 18%, transparent); padding: 0 2px; }
+.page samp, .page var { font: 500 .92em/1.5 var(--f-mono); }
+.page var { font-style: normal; color: var(--accent); }
+.page cite { font-style: italic; color: var(--muted); }
+.page caption { caption-side: top; text-align: left; padding-bottom: 8px; font-size: 13px; color: var(--muted); }
+.page iframe { max-width: 100%; border: 1px solid var(--line); border-radius: var(--radius); }
+/* A callout. One shape, not a family of colours: the words carry the weight,
+   and a page that needs three severities of box is usually three pages. */
+.page aside { margin: 20px 0; padding: 12px 14px; border-left: 3px solid var(--accent); background: var(--panel); border-radius: 0 var(--radius) var(--radius) 0; }
+.page aside > *:first-child { margin-top: 0; }
+.page aside > *:last-child { margin-bottom: 0; }
+.page blockquote { margin: 16px 0; padding: 2px 0 2px 16px; border-left: 2px solid var(--line); color: var(--muted); max-width: 64ch; }
+.page figure { margin: 20px 0; }
+.page figcaption { margin-top: 8px; font-size: 13px; color: var(--muted); }
+.page table { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 20px; }
+.page th, .page td { text-align: left; vertical-align: top; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--line); }
+.page th { font: 500 11px/18px var(--f-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+
+/* ---------- cards, questions, pager ---------- */
+
+.grid-links { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 12px; }
+.grid-links a { display: block; padding: 12px 14px; border: 1px solid var(--line); border-radius: 6px; text-decoration: none; color: var(--fg); }
+.grid-links a:hover { background: var(--panel); }
+.grid-links b { display: block; font: 400 17px/24px var(--f-head); }
+.grid-links span { font-size: 13px; color: var(--muted); }
+
+/* the answers that also become FAQPage data: open by default, so they are
+   readable without JavaScript and present in the page a crawler is served */
+.faq { margin-top: 12px; max-width: 68ch; }
+.faq details > *:last-child { margin-bottom: 0; }
+.faq p { margin: 8px 0 0; }
+
+.pager { display: flex; justify-content: space-between; gap: 12px; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); }
+.pager a { text-decoration: none; font-size: 14px; }
+.pager small { display: block; font: 500 11px var(--f-mono); color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+@media (max-width: 860px) { .pager a { flex: 1; padding: 12px 14px; border: 1px solid var(--line); border-radius: 6px; } }
+
+/* ---------- credit and colophon ---------- */
+
+.colophon { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 10px 26px; align-items: baseline; }
+.colophon b { font-weight: 500; color: var(--fg); }
+.colophon .spacer { margin-left: auto; }
+.colophon nav { display: flex; flex-wrap: wrap; gap: 10px 18px; }
+/* @nodsto/credit draws itself; it only needs to inherit the footer's colour */
+.colophon .nods { --nods-ink: inherit; }
+
+/* ---------- forced colours (Windows high contrast and the like) ----------
+
+   The user's palette replaces ours. Everything that says "this one is
+   current" or "this one is on" says it with a background tint, and a tint is
+   exactly what forced colours discards — so each of those states is restated
+   in the system colours, which is the one vocabulary that survives. The marks
+   in the package select go too: a brand colour means nothing here, and the
+   slot would otherwise sit empty. */
+@media (forced-colors: active) {
+  /* !important because the generated per-value rules are id-scoped and
+     would otherwise win on specificity; this is the one place where
+     overriding them is the whole point. */
+  select { --mark-img: none !important; --mark-size: 0px !important; --mark-gap: 0px !important; }
+  .side a[aria-current="page"],
+  .seg button[aria-pressed="true"], .seg button[aria-selected="true"],
+  .btn[aria-pressed="true"], .btn.on,
+  .page mark, .page ins { background: Highlight; color: HighlightText; }
+  .switch[aria-checked="true"] .switch-track { background: Highlight; }
+  .switch[aria-checked="true"] .switch-knob { background: HighlightText; }
+  .page aside { border-left-color: CanvasText; }
+  /* The ring is drawn with a shadow elsewhere, and shadows are dropped. */
+  :where(input, select, textarea, button, a, summary, [tabindex]):focus-visible { outline: 2px solid CanvasText; outline-offset: 2px; }
+}
+
+/* ---------- print ----------
+
+   Paper has no drawer, no controls and no copy button: what is left is the
+   prose, the code and whatever the preview settled on. Links are worth
+   nothing printed unless their address is printed too. */
+@media print {
+  .top, .side, .scrim, .skip, .pager, .copy, .code-head, .ctls, .play-tabs, .find, .colophon nav { display: none !important; }
+  .wrap { display: block; }
+  .page { max-width: none; padding: 0; }
+  body { background: #fff; color: #000; }
+  .code, .stage, figure, table, .faq details { break-inside: avoid; }
+  h1, h2, h3 { break-after: avoid; }
+  .page a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 10px; word-break: break-all; }
+  /* A folded answer prints as a heading with nothing under it. Both spellings
+     are here because the first is only in newer engines. */
+  details > *:not(summary) { display: block !important; }
+  details::details-content { content-visibility: visible !important; }
+}
+
+/* ---------- releases ---------- */
+.release + .release { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 22px; }
+.release h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.release h2 time { font: 400 13px/18px var(--f-ui); color: var(--muted); }
+.release-changes { list-style: none; padding: 0; }
+.release-changes > li { padding-left: 14px; border-left: 2px solid var(--line); }
+.release-changes > li + li { margin-top: 18px; }
+
+/* ---------- search results ---------- */
+.results { display: flex; flex-direction: column; gap: 2px; }
+.results a { display: block; padding: 7px 8px; border-radius: var(--radius); text-decoration: none; color: var(--fg); }
+.results a:hover { background: var(--panel); }
+.results a b { display: block; font-weight: 600; font-size: 13px; }
+.results a span { display: block; margin-top: 2px; font-size: 12px; line-height: 16px; color: var(--muted); overflow-wrap: anywhere; }
+.results mark { background: color-mix(in srgb, var(--mark) 70%, transparent); color: inherit; }
+
+/* A page that documents a version nobody installs any more. */
+.stale { margin: 0 0 18px; padding: 9px 13px; border: 1px solid var(--line-strong); border-left-width: 3px; border-radius: var(--radius); background: var(--panel); font-size: 13px; }
+@media (forced-colors: active) { .stale { border-color: CanvasText; } }

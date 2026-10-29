@@ -1,0 +1,4 @@
+node_modules/
+docs/
+example/docs/
+.DS_Store

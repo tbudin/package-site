@@ -1,0 +1,10 @@
+{
+  "name": "example-package",
+  "version": "1.2.0",
+  "description": "A worked example of a package-site: two pages, one playground, one global setting, so the template can be seen working without a real package.",
+  "license": "MIT",
+  "author": "Thomas Budin",
+  "type": "module",
+  "keywords": ["example"],
+  "scripts": { "site": "node ../bin/package-site.mjs build", "site:check": "node ../bin/package-site.mjs check" }
+}

@@ -1,0 +1,38 @@
+{
+  "name": "package-site",
+  "version": "0.1.0",
+  "description": "The documentation site every Plain Matter package gets: one shared chrome, static pages with real URLs, SEO and AIO emitted from the package's own metadata.",
+  "keywords": [
+    "documentation",
+    "static-site",
+    "seo",
+    "llms-txt",
+    "design-tokens"
+  ],
+  "license": "MIT",
+  "author": "Thomas Budin",
+  "type": "module",
+  "bin": {
+    "package-site": "./bin/package-site.mjs"
+  },
+  "exports": {
+    ".": "./src/index.mjs",
+    "./ui": "./assets/ui.js",
+    "./chrome.css": "./assets/chrome.css",
+    "./chrome.js": "./assets/chrome.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "assets",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "check": "node bin/package-site.mjs check",
+    "example": "cd example && node ../bin/package-site.mjs serve 4321"
+  }
+}
