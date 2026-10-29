@@ -146,21 +146,50 @@ record describing the site: the project, who made it, and the fonts and hosts
 it was made with. The package is optional — without it the footer falls back
 to plain markup and the build says so.
 
-nods is not published yet, so it is resolved through a link:
+nods is not published yet, so it is resolved through a link — and the link
+belongs to **the site**, not to this template. `import('@nodsto/credit')`
+resolves by walking up from wherever the template is installed, which is
+inside the site's own `node_modules`, so a copy the site declares is found and
+a copy sitting next to the template is not. Run this in the package whose site
+is being built:
 
 ```bash
 mkdir -p node_modules/@nodsto
 ln -s ../../../nods/packages/credit node_modules/@nodsto/credit
-ln -s ../../../nods/packages/record node_modules/@nodsto/record
 ```
+
+Linking it into this repository instead works only while the template is
+reached as a sibling folder, and stops the day it becomes a dependency. The
+footer then falls back without saying anything is wrong, because nothing is:
+the fallback is the design.
 
 ## check
 
 `check` builds and then reads the result back off disk. It fails on a missing
 or repeated canonical, a page with no description of its own, a page whose
-`<article>` holds almost no text (so it was never really prerendered), JSON-LD
-that does not parse, a local link or asset pointing at nothing, a sitemap that
-disagrees with the pages, and navigation left as a fragment.
+`<article>` holds almost no text (so it was never really prerendered), a page
+whose `index.md` is empty although its HTML is not, JSON-LD that does not
+parse, a local link or asset pointing at nothing, a sitemap that disagrees
+with the pages, and navigation left as a fragment.
 
-Every one of those rules has been made to fail on purpose. A check that has
-never failed is not a check.
+Every one of those rules has been made to fail on purpose, in
+`test/build.test.mjs`. A check that has never failed is not a check.
+
+## Tests
+
+```bash
+npm test          # node:test, no dependencies to install
+npm run check     # the tests, then build and check the example
+```
+
+`test/ui.test.mjs`, `test/seo.test.mjs`, `test/theme.test.mjs` and
+`test/changelog.test.mjs` cover the pure functions — the markup primitives,
+the HTML-to-markdown pass, the token and select-mark CSS, the changelog parser
+and the feed. `test/build.test.mjs` builds the example into a temporary folder,
+asserts what was written, and then breaks each of `check`'s rules in turn to
+prove it still bites.
+
+They are written against what the output is *for* — a label that points at its
+control, a pressed button that matches the shown pane, a markdown twin that
+says what the page says — rather than against exact strings, so reformatting
+the generator does not read as a regression.

@@ -47,8 +47,13 @@ export function control(c, v) {
       `<input type="range" id="${id}" data-k="${esc(c.k)}" min="${esc(c.min)}" max="${esc(c.max)}" step="${esc(c.step ?? 1)}" value="${esc(v)}">${note}</div>`;
   }
   if (c.type === 'toggle') {
-    return `<label class="${box} check" data-k="${esc(c.k)}" for="${id}">` +
-      `<input type="checkbox" id="${id}" data-k="${esc(c.k)}"${v ? ' checked' : ''}><span>${esc(c.label)}</span></label>${note}`;
+    /* The note goes inside the box, not after it. Both halves of the site
+       hide a control by its first element — controlPanel writes `hidden` on
+       it, chrome.js sets .hidden on it — so a note left outside stays on
+       screen describing a control that is not there, and `.ctl small` is
+       what gives it its size and colour in the first place. */
+    return `<div class="${box}" data-k="${esc(c.k)}"><label class="check" for="${id}">` +
+      `<input type="checkbox" id="${id}" data-k="${esc(c.k)}"${v ? ' checked' : ''}><span>${esc(c.label)}</span></label>${note}</div>`;
   }
   if (c.type === 'textarea') {
     return `<div class="${box} wide" data-k="${esc(c.k)}"><label for="${id}"><span>${esc(c.label)}</span></label>` +

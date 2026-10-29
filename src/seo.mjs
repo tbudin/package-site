@@ -57,11 +57,20 @@ export function toText(html) {
     /* \b on every name, or <b> swallows <button> and <li> swallows <link>. */
     .replace(/<\/?(h2|h3)\b[^>]*>/gi, (m) => (m.startsWith('</') ? '\n\n' : m.includes('h3') ? '\n\n### ' : '\n\n## '))
     .replace(/<li\b[^>]*>/gi, '\n- ')
-    .replace(/<\/(p|div|details|summary|ul|ol|nav|footer|aside|figure|blockquote)>/gi, '\n')
+    /* A question, then its answer as its own paragraph. Before the block
+       closers below, which would take the </summary> this needs to find and
+       leave the question as plain text. */
+    .replace(/<summary\b[^>]*>([\s\S]*?)<\/summary>/gi, '**$1**\n\n')
+    .replace(/<(b|strong)\b[^>]*>([\s\S]*?)<\/\1>/gi, '**$2**')
+    /* A blank line, not a newline: two blocks run together are one paragraph
+       in markdown, and markup built by joining a list has no whitespace
+       between its elements. A bullet holding two paragraphs is flattened to a
+       bullet and a paragraph by this — the indentation a continuation would
+       need cannot survive the whitespace pass below. */
+    .replace(/<\/(p|div|details|summary|ul|ol|nav|footer|aside|figure|blockquote|section)>/gi, '\n\n')
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/?(span|dt|dd)\b[^>]*>/gi, ' ')
     .replace(/<code\b[^>]*>([\s\S]*?)<\/code>/gi, '`$1`')
-    .replace(/<(b|strong|summary)\b[^>]*>([\s\S]*?)<\/\1>/gi, '**$2**')
     .replace(/<a [^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, '[$2]($1)')
     .replace(/<[^>]+>/g, '');
 
@@ -82,6 +91,10 @@ export function pageMarkdown(site, page, built) {
   const parts = [`# ${page.title}`, ''];
   if (page.group && !page.home) parts.push(`*${site.name} · ${page.group}*`, '');
   if (page.lead) parts.push(toText(page.lead), '');
+  /* `before` is the page's own body, above the playground. A page can put all
+     of itself there — the changelog does — so leaving it out here is how a
+     page comes to exist for a browser and be blank for everything else. */
+  if (page.before) parts.push(toText(page.before(built.state, data, ctx)), '');
   if (page.code) parts.push('```' + (site.codeLang || 'ts'), page.code(built.state, data, ctx), '```', '');
   if (page.after) parts.push(toText(page.after(built.state, data, ctx)), '');
   if (page.ref?.length) {

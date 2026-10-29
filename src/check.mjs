@@ -60,6 +60,22 @@ export async function check({ site, pages, out }) {
       if (text.length < 200) fail(where, `only ${text.length} characters of text in <article> — the page is not prerendered`);
     }
 
+    /* The markdown twin is written from a different set of the page's hooks
+       than the HTML is, so a page can be complete in one and empty in the
+       other — which is exactly what happened to the changelog, whose whole
+       body is `before`. Measured on the body: the title, the group line and
+       the source footer are there whether the page arrived or not. */
+    const md = await readFile(join(out, page.slug, 'index.md'), 'utf8').catch(() => null);
+    if (md === null) fail(where, 'index.md was not written');
+    else {
+      const body = md
+        .replace(/^#[^\n]*\n/, '')
+        .replace(/^\*[^\n]*\*\n/m, '')
+        .replace(/\n---\n[\s\S]*$/, '')
+        .trim();
+      if (body.length < 120) fail(where, `only ${body.length} characters in index.md — the page did not reach its markdown`);
+    }
+
     for (const m of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) {
       try { JSON.parse(m[1]); } catch (e) { fail(where, `JSON-LD does not parse: ${e.message}`); }
     }
@@ -97,6 +113,6 @@ export async function check({ site, pages, out }) {
     for (const p of problems) console.error(`  ${p}`);
     return false;
   }
-  console.log(`  check: ${pages.length} pages, canonicals unique, descriptions present, every local link resolves`);
+  console.log(`  check: ${pages.length} pages, canonicals unique, descriptions present, markdown twins filled, every local link resolves`);
   return true;
 }

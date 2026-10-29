@@ -282,8 +282,11 @@ h1.title { margin: 2px 0 6px; font: 400 34px/42px var(--f-head); letter-spacing:
 .ctl > label > span, .ctl > span { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); }
 .ctl small { color: var(--muted); font-size: 12px; line-height: 16px; }
 .ctl output { color: var(--fg); font-variant-numeric: tabular-nums; }
-.ctl.check { flex-direction: row; align-items: center; gap: 8px; }
-.ctl.check > span { color: var(--fg); }
+/* A toggle reads as a row — the box, then the words — inside the same column
+   box as every other control, so its note sits under it and is hidden with
+   it. The label stays a label: the words have to toggle the box. */
+.ctl > label.check { display: flex; flex-direction: row; align-items: center; gap: 8px; }
+.ctl > label.check > span { color: var(--fg); }
 
 /* On a phone the preview and its settings take turns, so nothing has to scroll
    inside anything. The toggle is a .seg like any other: one segmented control

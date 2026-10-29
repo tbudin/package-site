@@ -1,6 +1,6 @@
 {
   "name": "package-site",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The documentation site every Plain Matter package gets: one shared chrome, static pages with real URLs, SEO and AIO emitted from the package's own metadata.",
   "keywords": [
     "documentation",
@@ -29,10 +29,12 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
-    "check": "node bin/package-site.mjs check",
-    "example": "cd example && node ../bin/package-site.mjs serve 4321"
+    "test": "node --test test/*.test.mjs",
+    "example": "cd example && node ../bin/package-site.mjs serve 4321",
+    "check:example": "cd example && node ../bin/package-site.mjs check",
+    "check": "npm test && npm run check:example"
   }
 }
