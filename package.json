@@ -1,6 +1,6 @@
 {
   "name": "package-site",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "The documentation site every Plain Matter package gets: one shared chrome, static pages with real URLs, SEO and AIO emitted from the package's own metadata.",
   "keywords": [
     "documentation",

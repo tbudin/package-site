@@ -340,7 +340,12 @@ table.ref { min-width: 520px; }
 .page dd { margin: 0 0 8px; color: color-mix(in srgb, var(--fg) 85%, var(--bg)); }
 .page details { border-bottom: 1px solid var(--line); padding: 10px 0; }
 .page summary { cursor: pointer; font-weight: 500; }
-.page mark { background: color-mix(in srgb, var(--mark) 70%, transparent); color: inherit; padding: 0 2px; }
+/* Prose only. A <mark> that carries a class belongs to the package's own
+   stylesheet — papertooth's highlighter is one — and this rule outranks a
+   single class, so without :not([class]) it repaints it in the chrome's
+   colour. In dark mode that is a dull olive, which on a white sheet reads as
+   a highlighter gone muddy. */
+.page mark:not([class]) { background: color-mix(in srgb, var(--mark) 70%, transparent); color: inherit; padding: 0 2px; }
 .page abbr[title] { text-decoration: underline dotted; text-underline-offset: 3px; cursor: help; }
 .page sup, .page sub { font-size: 11px; line-height: 0; }
 .page del { text-decoration: line-through; text-decoration-color: var(--down); color: var(--muted); }
